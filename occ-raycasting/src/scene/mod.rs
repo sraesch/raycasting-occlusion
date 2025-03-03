@@ -8,7 +8,7 @@ use nalgebra_glm::{TVec3, Vec3};
 use serde::{Deserialize, Serialize};
 
 /// A simple scene.
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize, Clone)]
 pub struct Scene {
     pub meshes: Vec<Mesh>,
     pub objects: Vec<Object>,
@@ -58,7 +58,7 @@ impl Mesh {
 
 pub type Triangle = TVec3<u32>;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Object {
     pub mesh_index: u32,
     pub transform: Transform,

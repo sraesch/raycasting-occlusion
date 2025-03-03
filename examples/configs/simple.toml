@@ -1,9 +1,11 @@
 input = ["test_data/box.glb"]
+write_frames = true
+num_threads = 1
+frame_size = 512
 
 [[setups]]
 
 [setups.Rasterizer]
-frame_size = 256
 
 [[views]]
 projection_matrix = [

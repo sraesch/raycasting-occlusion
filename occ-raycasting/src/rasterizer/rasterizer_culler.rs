@@ -3,26 +3,20 @@ use nalgebra_glm::Mat4;
 
 use crate::{
     math::{mat3x4_to_mat4, project_pos},
-    Error, IndexedScene, Mesh, OccOptions, OcclusionTester, Result, Scene, StatsNodeTrait,
-    TestStats, Visibility,
+    OccOptions, OcclusionTester, Result, Scene, StatsNodeTrait, TestStats, Visibility,
 };
 
 use super::{rasterizer::Rasterizer, Frame};
 
 /// A rasterizer culler that culls triangles based on the given CAD data.
-pub struct RasterizerCuller<'a> {
+pub struct RasterizerCuller {
     stats: crate::StatsNode,
     options: OccOptions,
-    scene: &'a Scene,
+    scene: Scene,
     rasterizer: Rasterizer<u32>,
 }
 
-impl<'a> RasterizerCuller<'a> {
-    /// Returns the frame size based on the number of samples.
-    pub fn frame_size(&self) -> f32 {
-        (self.options.num_samples as f64).sqrt().ceil() as f32
-    }
-
+impl RasterizerCuller {
     /// Rasterizes the data and returns the stats about the rendering process.
     ///
     /// # Arguments
@@ -33,53 +27,51 @@ impl<'a> RasterizerCuller<'a> {
         view_matrix: nalgebra_glm::Mat4,
         projection_matrix: nalgebra_glm::Mat4,
     ) -> TestStats {
+        let frame_size = self.options.frame_size as f32;
         let mut stats = TestStats::default();
         let s = self.stats.get_child("rasterize");
         let _t = s.register_timing();
 
+        // combine the view and projection matrix
         let t = projection_matrix * view_matrix;
 
+        // iterate over all objects and rasterize them
         for (object_id, object) in self.scene.objects.iter().enumerate() {
+            let object_id = object_id as u32;
             trace!("Rasterize object: {}", object_id);
 
-            let mesh = &self.scene.meshes[object.mesh_index as usize];
+            let transform = t * mat3x4_to_mat4(&object.transform);
 
-            let t = t * mat3x4_to_mat4(&object.transform);
-            self.rasterize_mesh(object_id as u32, &mesh, &t, &mut stats);
+            let mesh = &self.scene.meshes[object.mesh_index as usize];
+            let positions = &mesh.vertices;
+
+            for t in mesh.indices.iter() {
+                stats.num_triangles += 1;
+
+                let v0 = project_pos(
+                    frame_size,
+                    frame_size,
+                    &transform,
+                    &positions[t[0] as usize],
+                );
+                let v1 = project_pos(
+                    frame_size,
+                    frame_size,
+                    &transform,
+                    &positions[t[1] as usize],
+                );
+                let v2 = project_pos(
+                    frame_size,
+                    frame_size,
+                    &transform,
+                    &positions[t[2] as usize],
+                );
+
+                self.rasterizer.rasterize(object_id, &v0, &v1, &v2);
+            }
         }
 
         stats
-    }
-
-    /// Rasterizes the given mesh with the respective transform.
-    ///
-    /// # Arguments
-    /// * `object_id` - The id of the object.
-    /// * `mesh` - The mesh to rasterize.
-    /// * `transform` - The transformation matrix to apply to the vertices,
-    ///                 i.e. the model-view-projection matrix.
-    /// * `stats` - The stats to update.
-    fn rasterize_mesh(
-        &mut self,
-        object_id: u32,
-        mesh: &Mesh,
-        transform: &Mat4,
-        stats: &mut TestStats,
-    ) {
-        // compute the square root of the number of samples and round it up
-        let frame_size = (self.options.num_samples as f64).sqrt().ceil() as f32;
-
-        let positions = &mesh.vertices;
-
-        for t in mesh.indices.iter() {
-            stats.num_triangles += 1;
-
-            let v0 = project_pos(frame_size, frame_size, transform, &positions[t[0] as usize]);
-            let v1 = project_pos(frame_size, frame_size, transform, &positions[t[1] as usize]);
-            let v2 = project_pos(frame_size, frame_size, transform, &positions[t[2] as usize]);
-
-            self.rasterizer.rasterize(object_id, &v0, &v1, &v2);
-        }
     }
 
     /// Computes the visibility based on the rasterized ids in the framebuffer.
@@ -113,16 +105,16 @@ impl<'a> RasterizerCuller<'a> {
     }
 }
 
-impl<'a> OcclusionTester<'a> for RasterizerCuller<'a> {
+impl OcclusionTester for RasterizerCuller {
     type IndexedSceneType = Scene;
 
-    fn get_name(&self) -> &str {
-        "Rasterizer Culler"
+    fn get_name() -> &'static str {
+        "rasterizer_occ"
     }
 
-    fn new(stats: crate::StatsNode, scene: &'a Scene, options: OccOptions) -> Result<Self> {
+    fn new(stats: crate::StatsNode, scene: Scene, options: OccOptions) -> Result<Self> {
         // compute the width == height which is the square root of the number of samples
-        let s: usize = (options.num_samples as f64).sqrt().ceil() as usize;
+        let s: usize = options.frame_size;
         let rasterizer = Rasterizer::new(s, s);
 
         Ok(Self {

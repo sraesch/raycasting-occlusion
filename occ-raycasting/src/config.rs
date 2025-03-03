@@ -16,6 +16,16 @@ pub struct TestConfig {
 
     /// The views to use for the tests
     pub views: Vec<View>,
+
+    /// Should the frame be written to a file
+    #[serde(default)]
+    pub write_frames: bool,
+
+    /// The number of threads to use
+    pub num_threads: usize,
+
+    /// The size of the frame
+    pub frame_size: usize,
 }
 
 impl TestConfig {
@@ -70,7 +80,7 @@ pub struct View {
 /// The occlusion tester
 #[derive(Debug, Deserialize, Serialize)]
 pub enum OcclusionSetup {
-    Rasterizer(RasterizerOptions),
+    Rasterizer,
 }
 
 /// The options for a rasterizer occlusion test
@@ -88,5 +98,12 @@ mod test {
     fn test_loading_config() {
         let simple_config_data = include_bytes!("../../examples/configs/simple.toml");
         let config = TestConfig::read(&simple_config_data[..]).unwrap();
+
+        assert_eq!(config.input, vec!["test_data/box.glb".to_string()]);
+        assert_eq!(config.views.len(), 1);
+        assert_eq!(config.setups.len(), 1);
+        assert!(config.write_frames);
+        assert_eq!(config.num_threads, 1);
+        assert_eq!(config.frame_size, 512);
     }
 }

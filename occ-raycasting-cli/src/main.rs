@@ -139,12 +139,18 @@ fn run_program(options: Options) -> anyhow::Result<()> {
     let s = Stats::root();
 
     let config = load_config(&options.config)?;
-    let scene = load_scene(s.get_child("scene"), &config.input).map_err(|err| {
+    let scene = load_scene(s.get_child("load_scene"), &config.input).map_err(|err| {
         error!("Failed to load scene: {:?}", err);
         err
     })?;
 
     print_scene_info(&scene);
+
+    let executor = occ_raycasting::TestExecutor::new(config, scene, options.output);
+    executor.run(s.get_child("test")).map_err(|err| {
+        error!("Failed to run the executor: {:?}", err);
+        err
+    })?;
 
     Ok(())
 }

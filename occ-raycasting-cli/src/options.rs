@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::{Parser, ValueEnum};
 use log::{info, LevelFilter};
 
@@ -31,6 +33,10 @@ pub struct Options {
     #[arg(short, value_enum, long, default_value_t = LogLevel::Info)]
     pub log_level: LogLevel,
 
+    /// The path to the output directory
+    #[arg(short, long)]
+    pub output: PathBuf,
+
     /// The test configuration file
     #[arg(short, long)]
     pub config: String,
@@ -48,6 +54,7 @@ impl Options {
     /// Dumps the options to the log.
     pub fn dump_to_log(&self) {
         info!("Log Level: {:?}", self.log_level);
+        info!("Output Directory: {:?}", self.output);
         info!("Config file: {:?}", self.config);
     }
 }

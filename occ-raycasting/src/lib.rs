@@ -1,5 +1,6 @@
 mod config;
 mod error;
+mod executor;
 mod math;
 pub mod rasterizer;
 mod scene;
@@ -7,6 +8,7 @@ mod stats;
 
 pub use config::*;
 pub use error::*;
+pub use executor::*;
 use nalgebra_glm::Mat4;
 use rasterizer::Frame;
 pub use scene::*;
@@ -25,8 +27,8 @@ pub struct OccOptions {
     /// The number of threads to be used for the testing
     pub num_threads: usize,
 
-    /// The number of samples to be used for the testing
-    pub num_samples: usize,
+    /// The size of the occlusion test frame.
+    pub frame_size: usize,
 }
 
 /// Resulting stats about the occlusion testing.
@@ -57,7 +59,7 @@ impl Default for OccOptions {
     fn default() -> Self {
         Self {
             num_threads: 1,
-            num_samples: 65536,
+            frame_size: 256,
         }
     }
 }
@@ -65,7 +67,7 @@ impl Default for OccOptions {
 /// A general progress callback function to give updates on the progress.
 ///
 /// # Arguments
-/// * `current_stage` - The current stage of the progress.
+/// * `current_stage` - The current stage of the progress starting at 0.
 /// * `total_stages` - The total number of stages.
 /// * `progress` - The progress of the current stage in percent.
 /// * `msg` - The message to display.
@@ -93,7 +95,7 @@ pub trait IndexedScene: Sized {
 }
 
 /// A trait for the occlusion testing.
-pub trait OcclusionTester<'a>: Sized {
+pub trait OcclusionTester: Sized {
     /// The indexed scene type used for the occlusion testing.
     type IndexedSceneType: IndexedScene;
 
@@ -105,12 +107,12 @@ pub trait OcclusionTester<'a>: Sized {
     /// * `options` - The culler options.
     fn new(
         stats: StatsNode,
-        scene_data: &'a Self::IndexedSceneType,
+        scene_data: Self::IndexedSceneType,
         options: OccOptions,
     ) -> Result<Self>;
 
     /// Returns the name of the occlusion tester.
-    fn get_name(&self) -> &str;
+    fn get_name() -> &'static str;
 
     /// Computes a frame using culling and determines the visible ids of the objects.
     ///
