@@ -6,9 +6,9 @@ use cad_import::{
     ID,
 };
 use log::{debug, error};
-use nalgebra_glm::{Mat3x4, Mat4, Vec3};
+use nalgebra_glm::{Mat4, Vec3};
 
-use crate::{Error, Mesh as SceneMesh, Result};
+use crate::{math::mat4_to_mat3x4, Error, Mesh as SceneMesh, Result};
 
 use super::{io_utils::TriangleIterator, Scene, Triangle};
 
@@ -51,7 +51,7 @@ fn load_cad_data(file_path: &Path) -> Result<CADData> {
 ///
 /// # Arguments
 /// * `input_file` - The input file whose extension will be used
-fn determine_mime_types(manager: &Manager, input_file: &Path) -> Result<Vec<String>> {
+pub fn determine_mime_types(manager: &Manager, input_file: &Path) -> Result<Vec<String>> {
     match input_file.extension() {
         Some(ext) => match ext.to_str() {
             Some(ext) => Ok(manager.get_mime_types_for_extension(ext)),
@@ -66,7 +66,7 @@ fn determine_mime_types(manager: &Manager, input_file: &Path) -> Result<Vec<Stri
 /// # Arguments
 /// * `scene` - The scene to which the data will be added.
 /// * `cad_data` - The CAD data to convert to a scene.
-fn add_cad_data_to_scene(scene: &mut Scene, cad_data: &CADData) {
+pub fn add_cad_data_to_scene(scene: &mut Scene, cad_data: &CADData) {
     let root_node = cad_data.get_root_node();
     let traversal_context = TraversalContext::new(root_node);
     let mut traversal_data = TraversalData::new();
@@ -203,27 +203,6 @@ where
     }));
 }
 
-/// Converts a Mat4 to a Mat3x4 matrix.
-///
-/// # Arguments
-/// * `mat` - The Mat4 matrix to convert.
-fn mat4_to_mat3x4(mat: &Mat4) -> Mat3x4 {
-    Mat3x4::new(
-        mat[(0, 0)],
-        mat[(0, 1)],
-        mat[(0, 2)],
-        mat[(0, 3)],
-        mat[(1, 0)],
-        mat[(1, 1)],
-        mat[(1, 2)],
-        mat[(1, 3)],
-        mat[(2, 0)],
-        mat[(2, 1)],
-        mat[(2, 2)],
-        mat[(2, 3)],
-    )
-}
-
 /// Contextual data used during traversing the node data.
 #[derive(Clone)]
 struct TraversalContext {
@@ -266,27 +245,5 @@ impl TraversalData {
         Self {
             shape_map: HashMap::new(),
         }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use nalgebra_glm::{rotate, translate, vec4_to_vec3, Vec3};
-
-    use super::*;
-
-    #[test]
-    fn test_mat4_to_mat3x4() {
-        let mat = translate(&Mat4::identity(), &Vec3::new(1.0, 2.0, 3.0));
-        let mat3x4 = mat4_to_mat3x4(&mat);
-        assert_eq!(mat3x4.column(3), Vec3::new(1.0, 2.0, 3.0));
-
-        let mat = rotate(&Mat4::identity(), 90.0, &Vec3::new(1.0, 0.0, 0.0));
-        let mat3x4 = mat4_to_mat3x4(&mat);
-
-        // check the inner 3x3 part of both matrices are equal
-        assert_eq!(mat3x4.column(0), vec4_to_vec3(&mat.column(0).into_owned()));
-        assert_eq!(mat3x4.column(1), vec4_to_vec3(&mat.column(1).into_owned()));
-        assert_eq!(mat3x4.column(2), vec4_to_vec3(&mat.column(2).into_owned()));
     }
 }

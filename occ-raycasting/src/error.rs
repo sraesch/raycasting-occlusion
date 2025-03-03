@@ -13,6 +13,12 @@ pub enum Error {
 
     #[error("No loader found for the given file")]
     NoLoaderFound,
+
+    #[error("Serialization error: {0}")]
+    SerializationError(Box<dyn std::error::Error + Send + Sync>),
+
+    #[error("Deserialization error: {0}")]
+    DeserializationError(Box<dyn std::error::Error + Send + Sync>),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

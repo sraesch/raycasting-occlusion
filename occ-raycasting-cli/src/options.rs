@@ -1,4 +1,4 @@
-use clap::{Parser, ValueEnum};
+use clap::{Parser, Subcommand, ValueEnum};
 use log::{info, LevelFilter};
 
 /// Workaround for parsing the different log level
@@ -34,6 +34,24 @@ pub struct Options {
     /// The input files
     #[arg(short, long)]
     pub input_files: String,
+
+    /// The occlusion test subcommand
+    #[command(subcommand)]
+    pub occ: OccTestSubcommand,
+}
+
+#[derive(Subcommand, Debug, Clone)]
+pub enum OccTestSubcommand {
+    /// Using a simple rasterizer
+    Rasterizer(RasterizerOptions),
+}
+
+/// The arguments for the rasterizer occlusion test
+#[derive(Parser, Debug, Clone)]
+pub struct RasterizerOptions {
+    /// The output file
+    #[arg(short, long)]
+    pub image_size: usize,
 }
 
 impl Options {
@@ -41,5 +59,12 @@ impl Options {
     pub fn dump_to_log(&self) {
         info!("Log Level: {:?}", self.log_level);
         info!("Input files: {:?}", self.input_files);
+
+        match &self.occ {
+            OccTestSubcommand::Rasterizer(options) => {
+                info!("Occ Test: Rasterizer");
+                info!("Image Size: {:?}", options.image_size);
+            }
+        }
     }
 }

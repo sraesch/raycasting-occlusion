@@ -3,7 +3,10 @@ use std::time::Instant;
 use anyhow::Result;
 use clap::Parser;
 use log::{error, info, LevelFilter};
-use occ_raycasting::{load_into_scene, Scene, Stats, StatsNodeTrait};
+use occ_raycasting::{
+    load_into_scene, rasterizer::RasterizerCuller, OcclusionTester, Scene, Stats, StatsNodeTrait,
+    Visibility,
+};
 use options::Options;
 
 mod options;
@@ -108,6 +111,23 @@ fn run_program(options: Options) -> anyhow::Result<()> {
     };
 
     print_scene_info(&scene);
+
+    match options.occ {
+        options::OccTestSubcommand::Rasterizer(options) => {
+            let _t = s.get_child("rasterizer").register_timing();
+            let options = occ_raycasting::OccOptions {
+                num_threads: 1,
+                num_samples: options.image_size * options.image_size,
+            };
+            let mut c =
+                RasterizerCuller::new(s.get_child("culling"), &scene, options).map_err(|err| {
+                    error!("Failed to create rasterizer culler: {:?}", err);
+                    err
+                })?;
+
+            // TODO: Implement the actual culling.
+        }
+    }
 
     Ok(())
 }
