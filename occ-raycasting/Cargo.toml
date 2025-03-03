@@ -4,3 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+log = "0.4"
+cad_import = "0.3"
+thiserror = "2.0"
+chrono = { version = "0.4", features = ["serde"] }
+nalgebra-glm = "0.19"
+lazy_static = "1.4"
