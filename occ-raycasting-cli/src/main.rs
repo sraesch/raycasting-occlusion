@@ -1,12 +1,9 @@
-use std::time::Instant;
+use std::{fs::File, io::BufReader, path::Path, time::Instant};
 
 use anyhow::Result;
 use clap::Parser;
 use log::{error, info, LevelFilter};
-use occ_raycasting::{
-    load_into_scene, rasterizer::RasterizerCuller, OcclusionTester, Scene, Stats, StatsNodeTrait,
-    Visibility,
-};
+use occ_raycasting::{load_into_scene, Scene, Stats, StatsNode, StatsNodeTrait, TestConfig};
 use options::Options;
 
 mod options;
@@ -21,12 +18,12 @@ fn initialize_logging(filter: LevelFilter) {
     builder.filter_level(filter).init();
 }
 
-/// Loads the CAd files based on the provided glob pattern.
+/// Loads the CAD files based on the provided glob pattern into the scene.
 ///
 /// # Arguments
+/// * `scene` - The scene to load the CAD files into.
 /// * `files` - The glob pattern for the CAD files.
-fn load_cad_files_files(files: &str) -> Result<(Scene, usize)> {
-    let mut scene = Scene::default();
+fn load_cad_files_files(scene: &mut Scene, files: &str) -> Result<usize> {
     let mut num_read_files = 0;
 
     let paths = match glob::glob(files) {
@@ -42,7 +39,7 @@ fn load_cad_files_files(files: &str) -> Result<(Scene, usize)> {
             Ok(path) => {
                 info!("Loading CAD data '{}'...", path.display());
 
-                if let Err(err) = load_into_scene(&mut scene, &path) {
+                if let Err(err) = load_into_scene(scene, &path) {
                     error!("Failed to load CAD data: {:?}", err);
                     info!("Skipping CAD data...");
                 } else {
@@ -56,7 +53,7 @@ fn load_cad_files_files(files: &str) -> Result<(Scene, usize)> {
         }
     }
 
-    Ok((scene, num_read_files))
+    Ok(num_read_files)
 }
 
 /// Prints the scene information.
@@ -86,48 +83,68 @@ fn print_scene_info(scene: &Scene) {
     info!("  - Number of vertices: {}", num_vertices);
 }
 
+/// Loads the test configuration from the provided path.
+///
+/// # Arguments
+/// * `path` - The path to the configuration file.
+fn load_config<P: AsRef<Path>>(path: P) -> Result<TestConfig> {
+    let file = File::open(path).map_err(|err| {
+        error!("Failed to open file: {:?}", err);
+        err
+    })?;
+
+    let config = TestConfig::read(BufReader::new(file)).map_err(|err| {
+        error!("Failed to read config: {:?}", err);
+        err
+    })?;
+
+    info!("Loaded config: {:?}", config);
+
+    Ok(config)
+}
+
+/// Loads the scene from the provided input files.
+///
+/// # Arguments
+/// * `s` - The stats node to register the timing with.
+/// * `input` - The input files to load the scene from.
+fn load_scene(s: StatsNode, input: &[String]) -> Result<Scene> {
+    let mut scene = Scene::default();
+
+    let t_ = Instant::now();
+    let _t = s.get_child("loading").register_timing();
+
+    let mut num_read = 0;
+    for f in input.iter() {
+        num_read += load_cad_files_files(&mut scene, f).map_err(|err| {
+            error!("Failed to load CAD data: {:?}", err);
+            err
+        })?;
+    }
+
+    info!(
+        "Loaded {} CAD files in {} ms",
+        num_read,
+        t_.elapsed().as_secs_f64() * 1e3f64
+    );
+
+    Ok(scene)
+}
+
 /// Runs the program.
 ///
 /// # Arguments
 /// * `options` - The program options.
 fn run_program(options: Options) -> anyhow::Result<()> {
     let s = Stats::root();
-    let t_ = Instant::now();
-    let scene = {
-        let _t = s.get_child("loading").register_timing();
 
-        let (scene, num_read) = load_cad_files_files(&options.input_files).map_err(|err| {
-            error!("Failed to load CAD data: {:?}", err);
-            err
-        })?;
-
-        info!(
-            "Loaded {} CAD files in {} ms",
-            num_read,
-            t_.elapsed().as_secs_f64() * 1e3f64
-        );
-
-        scene
-    };
+    let config = load_config(&options.config)?;
+    let scene = load_scene(s.get_child("scene"), &config.input).map_err(|err| {
+        error!("Failed to load scene: {:?}", err);
+        err
+    })?;
 
     print_scene_info(&scene);
-
-    match options.occ {
-        options::OccTestSubcommand::Rasterizer(options) => {
-            let _t = s.get_child("rasterizer").register_timing();
-            let options = occ_raycasting::OccOptions {
-                num_threads: 1,
-                num_samples: options.image_size * options.image_size,
-            };
-            let mut c =
-                RasterizerCuller::new(s.get_child("culling"), &scene, options).map_err(|err| {
-                    error!("Failed to create rasterizer culler: {:?}", err);
-                    err
-                })?;
-
-            // TODO: Implement the actual culling.
-        }
-    }
 
     Ok(())
 }

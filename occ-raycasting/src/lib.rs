@@ -1,9 +1,11 @@
+mod config;
 mod error;
 mod math;
 pub mod rasterizer;
 mod scene;
 mod stats;
 
+pub use config::*;
 pub use error::*;
 use nalgebra_glm::Mat4;
 use rasterizer::Frame;
