@@ -1,12 +1,64 @@
+mod frame;
+mod rasterizer;
+
+pub use frame::*;
 use log::trace;
 use nalgebra_glm::Mat4;
+use rasterizer::Rasterizer;
+
+use std::fmt::Debug;
 
 use crate::{
     math::{mat3x4_to_mat4, project_pos},
     OccOptions, OcclusionTester, Result, Scene, StatsNodeTrait, TestStats, Visibility,
 };
 
-use super::{rasterizer::Rasterizer, Frame};
+pub trait DepthBufferPrecisionType:
+    Clone + Copy + PartialEq + PartialOrd + Default + Debug + Send + Sync + Sized
+{
+    const MAX: Self;
+
+    /// Converts the given depth value from a floating-point value to the depth value.
+    ///
+    /// # Arguments
+    /// * `depth` - The depth value in floating-point encoding.
+    fn from_f32(depth: f32) -> Self;
+
+    /// Converts the depth value to a floating-point value.
+    fn to_f32(self) -> f32;
+}
+
+impl DepthBufferPrecisionType for u32 {
+    const MAX: u32 = u32::MAX;
+
+    #[inline]
+    fn from_f32(depth: f32) -> Self {
+        debug_assert!((0f32..=1f32).contains(&depth));
+        const F_MAX: f32 = u32::MAX as f32;
+        (depth * F_MAX) as Self
+    }
+
+    #[inline]
+    fn to_f32(self) -> f32 {
+        self as f32 / u32::MAX as f32
+    }
+}
+
+impl DepthBufferPrecisionType for u16 {
+    const MAX: u16 = u16::MAX;
+
+    #[inline]
+    fn from_f32(depth: f32) -> Self {
+        debug_assert!((0f32..=1f32).contains(&depth));
+        const F_MAX: f32 = u16::MAX as f32;
+        (depth * F_MAX) as Self
+    }
+
+    #[inline]
+    fn to_f32(self) -> f32 {
+        self as f32 / u16::MAX as f32
+    }
+}
 
 /// A rasterizer culler that culls triangles based on the given CAD data.
 pub struct RasterizerCuller {
@@ -138,6 +190,7 @@ impl OcclusionTester for RasterizerCuller {
             *frame = self.rasterizer.get_frame();
         }
 
+        self.rasterizer.clear();
         self.compute_visibility_internal(visibility);
 
         stats

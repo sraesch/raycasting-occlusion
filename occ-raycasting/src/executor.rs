@@ -3,7 +3,7 @@ use std::{fs::File, path::PathBuf};
 use log::info;
 
 use crate::{
-    rasterizer::{gen_random_colors, Frame, RasterizerCuller},
+    rasterizer_culler::{gen_random_colors, Frame, RasterizerCuller},
     Error, IndexedScene, OccOptions, OcclusionSetup, OcclusionTester, Result, Scene, StatsNode,
     StatsNodeTrait, TestConfig, Visibility,
 };

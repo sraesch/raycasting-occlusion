@@ -37,24 +37,6 @@ impl<D: DepthBufferPrecisionType> Rasterizer<D> {
         }
     }
 
-    /// Returns the width of the rasterizer.
-    #[inline]
-    pub fn get_width(&self) -> usize {
-        self.width
-    }
-
-    /// Returns the height of the rasterizer.
-    #[inline]
-    pub fn get_height(&self) -> usize {
-        self.height
-    }
-
-    /// Returns the depth buffer of the rasterizer.
-    #[inline]
-    pub fn get_depth_buffer(&self) -> &[D] {
-        &self.depth_buffer
-    }
-
     /// Returns the id buffer of the rasterizer.
     pub fn get_frame(&self) -> Frame {
         let mut frame = Frame::new_empty(self.width, self.height, true);
@@ -355,7 +337,6 @@ impl<D: DepthBufferPrecisionType> Rasterizer<D> {
         }
     }
 }
-
 
 #[cfg(test)]
 mod test {

@@ -2,7 +2,7 @@ mod config;
 mod error;
 mod executor;
 mod math;
-pub mod rasterizer;
+pub mod rasterizer_culler;
 mod scene;
 mod stats;
 
@@ -10,7 +10,7 @@ pub use config::*;
 pub use error::*;
 pub use executor::*;
 use nalgebra_glm::Mat4;
-use rasterizer::Frame;
+use rasterizer_culler::Frame;
 pub use scene::*;
 pub use stats::*;
 
