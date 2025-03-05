@@ -2,8 +2,10 @@
     "editor.formatOnSave": true,
     "cSpell.words": [
         "nalgebra",
+        "pmmat",
         "rasterizer",
         "rasterizes",
+        "raycaster",
         "serde",
         "thiserror"
     ]

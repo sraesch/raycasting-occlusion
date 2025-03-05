@@ -126,7 +126,7 @@ impl TestExecutor {
             );
 
             if let Some(frame) = frame.as_mut() {
-                let frame_path = setup_dir.join(format!("view_{}.png", view_index));
+                let frame_path = setup_dir.join(format!("view_{}.ppm", view_index));
                 let writer = match File::create(&frame_path) {
                     Ok(writer) => writer,
                     Err(err) => {

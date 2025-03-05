@@ -61,7 +61,7 @@ impl<D: DepthBufferPrecisionType> Rasterizer<D> {
     /// Clears the framebuffer.
     #[inline]
     pub fn clear(&mut self) {
-        self.depth_buffer.clear();
+        self.depth_buffer.fill(D::MAX);
         self.id_buffer.fill(None);
     }
 

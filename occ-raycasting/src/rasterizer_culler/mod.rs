@@ -184,13 +184,13 @@ impl OcclusionTester for RasterizerCuller {
         view_matrix: Mat4,
         projection_matrix: Mat4,
     ) -> TestStats {
+        self.rasterizer.clear();
         let stats = self.rasterize_data(view_matrix, projection_matrix);
 
         if let Some(frame) = frame {
             *frame = self.rasterizer.get_frame();
         }
 
-        self.rasterizer.clear();
         self.compute_visibility_internal(visibility);
 
         stats
