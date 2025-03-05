@@ -4,6 +4,7 @@ use log::info;
 
 use crate::{
     rasterizer_culler::{gen_random_colors, Frame, RasterizerCuller},
+    raycaster::NaiveRaycaster,
     Error, IndexedScene, OccOptions, OcclusionSetup, OcclusionTester, Result, Scene, StatsNode,
     StatsNodeTrait, TestConfig, Visibility,
 };
@@ -57,6 +58,16 @@ impl TestExecutor {
                     };
                     if let Err(err) = self.test_setup::<RasterizerCuller>(s.clone(), options) {
                         log::error!("Failed to test the rasterizer setup: {:?}", err);
+                    }
+                }
+                OcclusionSetup::NaiveRaycaster => {
+                    log::info!("Testing naive raycaster setup...");
+                    let options = OccOptions {
+                        frame_size: self.config.frame_size,
+                        num_threads,
+                    };
+                    if let Err(err) = self.test_setup::<NaiveRaycaster>(s.clone(), options) {
+                        log::error!("Failed to test the naive raycaster setup: {:?}", err);
                     }
                 }
             }

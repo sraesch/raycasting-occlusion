@@ -3,8 +3,10 @@ mod error;
 mod executor;
 mod math;
 pub mod rasterizer_culler;
+pub mod raycaster;
 mod scene;
 mod stats;
+mod utils;
 
 pub use config::*;
 pub use error::*;

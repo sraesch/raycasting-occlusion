@@ -5,7 +5,9 @@ frame_size = 512
 
 [[setups]]
 
-[setups.Rasterizer]
+# [setups.Rasterizer]
+
+[setups.NaiveRaycaster]
 
 [[views]]
 projection_matrix = [

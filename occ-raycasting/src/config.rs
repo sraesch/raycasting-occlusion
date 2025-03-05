@@ -81,6 +81,7 @@ pub struct View {
 #[derive(Debug, Deserialize, Serialize)]
 pub enum OcclusionSetup {
     Rasterizer,
+    NaiveRaycaster,
 }
 
 /// The options for a rasterizer occlusion test

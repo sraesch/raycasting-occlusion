@@ -1,4 +1,14 @@
-use nalgebra_glm::{vec4_to_vec3, Mat3x4, Mat4, Vec3, Vec4};
+mod aabb;
+mod intersection;
+mod plane;
+mod ray;
+
+pub use aabb::*;
+pub use intersection::*;
+pub use plane::*;
+pub use ray::*;
+
+use nalgebra_glm::{inverse, vec4_to_vec3, Mat3x4, Mat4, Vec3, Vec4};
 
 /// Constraint a value to lie between two further values
 ///
@@ -94,6 +104,16 @@ pub fn mat3x4_to_mat4(mat: &Mat3x4) -> Mat4 {
         0.0,
         1.0,
     )
+}
+
+/// Extracts the camera position from the given view matrix.
+///
+/// # Arguments
+/// * `view_matrix` - The view matrix to extract the camera position from.
+pub fn extract_camera_pos_from_view_matrix(view_matrix: &Mat4) -> Vec3 {
+    let inv_view_matrix = inverse(&view_matrix);
+    let c3 = inv_view_matrix.column(3);
+    Vec3::new(c3[0], c3[1], c3[2])
 }
 
 #[cfg(test)]

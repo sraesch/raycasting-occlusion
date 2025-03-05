@@ -10,6 +10,7 @@ use std::fmt::Debug;
 
 use crate::{
     math::{mat3x4_to_mat4, project_pos},
+    utils::compute_visibility_from_id_buffer,
     OccOptions, OcclusionTester, Result, Scene, StatsNodeTrait, TestStats, Visibility,
 };
 
@@ -131,29 +132,9 @@ impl RasterizerCuller {
     /// # Arguments
     /// * `visibility` - The visibility to update.
     fn compute_visibility_internal(&self, visibility: &mut Visibility) {
-        // first create a histogram of the rendered ids
         let num_objects = self.scene.objects.len();
-        let mut histogram = vec![0u32; num_objects];
-        for id in self.rasterizer.id_buffer.iter() {
-            match id {
-                Some(id) => {
-                    histogram[*id as usize] += 1;
-                }
-                None => {}
-            }
-        }
-
-        // make sure that the visibility has the correct size
-        visibility.resize(num_objects, (0, 0f32));
-
-        // now fill the visibility based on the histogram, but not order yet
-        for ((object_id, count), v) in histogram.iter().enumerate().zip(visibility.iter_mut()) {
-            v.0 = object_id as u32;
-            v.1 = *count as f32 / self.rasterizer.id_buffer.len() as f32;
-        }
-
-        // sort the visibility based on the visibility
-        visibility.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        let frame = self.rasterizer.get_frame();
+        compute_visibility_from_id_buffer(visibility, frame.get_id_buffer(), num_objects);
     }
 }
 
