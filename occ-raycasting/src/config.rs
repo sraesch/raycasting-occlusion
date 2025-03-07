@@ -33,13 +33,9 @@ impl TestConfig {
     ///
     /// # Arguments
     /// * `reader` - The reader to read the configuration from.
-    pub fn read<R: std::io::Read>(mut reader: R) -> Result<Self> {
-        // read everything from the reader into a string
-        let mut toml = String::new();
-        reader.read_to_string(&mut toml)?;
-
+    pub fn read<R: std::io::Read>(reader: R) -> Result<Self> {
         // deserialize into the test config
-        let config: TestConfig = toml::from_str(&toml).map_err(|e| {
+        let config: TestConfig = serde_yaml::from_reader(reader).map_err(|e| {
             error!("Failed to parse the configuration: {:?}", e);
 
             Error::DeserializationError(Box::new(e))
@@ -54,7 +50,7 @@ impl TestConfig {
     /// * `writer` - The writer to write the configuration to.
     pub fn write<W: std::io::Write>(&self, mut writer: W) -> Result<()> {
         // serialize the configuration into a string
-        let toml = toml::to_string_pretty(&self).map_err(|e| {
+        let toml = serde_yaml::to_string(&self).map_err(|e| {
             error!("Failed to serialize the configuration: {:?}", e);
 
             Error::SerializationError(Box::new(e))
@@ -97,12 +93,12 @@ mod test {
 
     #[test]
     fn test_loading_config() {
-        let simple_config_data = include_bytes!("../../examples/configs/simple.toml");
+        let simple_config_data = include_bytes!("../../examples/configs/simple.yaml");
         let config = TestConfig::read(&simple_config_data[..]).unwrap();
 
         assert_eq!(config.input, vec!["test_data/box.glb".to_string()]);
         assert_eq!(config.views.len(), 1);
-        assert_eq!(config.setups.len(), 1);
+        assert_eq!(config.setups.len(), 2);
         assert!(config.write_frames);
         assert_eq!(config.num_threads, 1);
         assert_eq!(config.frame_size, 512);
