@@ -35,11 +35,22 @@ pub struct OccOptions {
 }
 
 /// Resulting stats about the occlusion testing.
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Debug)]
 pub struct TestStats {
     /// The number of triangles processed, i.e., that could not be avoided through acceleration
     /// structures or other means.
     pub num_triangles: usize,
+
+    /// The number of volume tests performed.
+    pub num_volume_tests: usize,
+}
+
+impl TestStats {
+    /// Dumps the stats to the log.
+    pub fn dump_to_log(&self) {
+        log::info!("Num Triangles: {}", self.num_triangles);
+        log::info!("Num Volume Tests: {}", self.num_volume_tests);
+    }
 }
 
 impl std::ops::Add<Self> for TestStats {
@@ -48,6 +59,7 @@ impl std::ops::Add<Self> for TestStats {
     fn add(self, rhs: Self) -> Self::Output {
         Self {
             num_triangles: self.num_triangles + rhs.num_triangles,
+            num_volume_tests: self.num_volume_tests + rhs.num_volume_tests,
         }
     }
 }
@@ -55,6 +67,7 @@ impl std::ops::Add<Self> for TestStats {
 impl std::ops::AddAssign<Self> for TestStats {
     fn add_assign(&mut self, rhs: Self) {
         self.num_triangles += rhs.num_triangles;
+        self.num_volume_tests += rhs.num_volume_tests;
     }
 }
 

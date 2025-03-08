@@ -6,7 +6,7 @@ use crate::{
     rasterizer_culler::{gen_random_colors, Frame, RasterizerCuller},
     raycaster::NaiveRaycaster,
     Error, IndexedScene, OccOptions, OcclusionSetup, OcclusionTester, Result, Scene, StatsNode,
-    StatsNodeTrait, TestConfig, Visibility,
+    StatsNodeTrait, TestConfig, TestStats, Visibility,
 };
 
 /// A test executor for running the occlusion tests.
@@ -119,6 +119,7 @@ impl TestExecutor {
 
         // start iterating over the views
         let mut visibility = Visibility::default();
+        let mut test_stats: TestStats = Default::default();
         for (view_index, view) in self.config.views.iter().enumerate() {
             info!(
                 "Render view {}/{}...",
@@ -129,7 +130,7 @@ impl TestExecutor {
             let view_matrix = view.view_matrix;
             let projection_matrix = view.projection_matrix;
 
-            tester.compute_visibility(
+            test_stats += tester.compute_visibility(
                 &mut visibility,
                 frame.as_mut(),
                 view_matrix,
@@ -150,6 +151,9 @@ impl TestExecutor {
                     log::error!("Failed to save the frame: {:?}", err);
                 }
             }
+
+            // dump stats to the console
+            test_stats.dump_to_log();
         }
 
         Ok(())
