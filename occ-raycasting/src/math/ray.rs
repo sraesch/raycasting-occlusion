@@ -1,6 +1,7 @@
 use nalgebra_glm::{normalize, Vec3};
 
 /// A single ray that starts at pos and goes into infinity along dir
+#[derive(Debug, Clone, Copy)]
 pub struct Ray {
     /// The start position of the ray
     pub pos: Vec3,

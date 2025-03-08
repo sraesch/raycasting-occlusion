@@ -111,7 +111,7 @@ impl NaiveRaycaster {
                         let p1 = Self::transform(&object.transform, &positions[t[1] as usize]);
                         let p2 = Self::transform(&object.transform, &positions[t[2] as usize]);
 
-                        if let Some(d) = triangle_ray(&p0, &p1, &p2, &ray) {
+                        if let Some(d) = triangle_ray(&p0, &p1, &p2, &ray, Some(depth)) {
                             if depth > d {
                                 depth = d;
                                 id_buffer[y * self.options.frame_size + x] = Some(object_id);
