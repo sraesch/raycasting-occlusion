@@ -1,13 +1,14 @@
-use bincode::de;
 use log::{error, trace};
-use nalgebra_glm::{vec3_to_vec4, vec4_to_vec3, Mat3x4, Mat4, Vec3, Vec4};
+use nalgebra_glm::{vec4_to_vec3, Mat3x4, Mat4, Vec3, Vec4};
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    math::{extract_camera_pos_from_view_matrix, mat3x4_to_mat4, triangle_ray, Ray},
+    math::{extract_camera_pos_from_view_matrix, triangle_ray, Ray, AABB},
     rasterizer_culler::Frame,
-    scene,
+    spatial::RayIntersectionTest,
     utils::compute_visibility_from_id_buffer,
-    OccOptions, OcclusionTester, Result, Scene, StatsNode, StatsNodeTrait, TestStats, Visibility,
+    IndexedScene, OccOptions, OcclusionTester, Result, Scene, StatsNode, StatsNodeTrait, TestStats,
+    Visibility,
 };
 
 /// A very simple ray caster without any acceleration structures
@@ -15,6 +16,7 @@ pub struct NaiveRaycaster {
     stats: StatsNode,
     options: OccOptions,
     scene: Scene,
+    scene_volumes: Vec<AABB>,
 
     /// The id buffer of the rasterizer.
     pub id_buffer: Vec<Option<u32>>,
@@ -67,7 +69,7 @@ impl NaiveRaycaster {
         let mut stats = TestStats::default();
 
         // extract camera position
-        let x0 = extract_camera_pos_from_view_matrix(&view_matrix);
+        let x0 = extract_camera_pos_from_view_matrix(view_matrix);
 
         // compute matrix for defining the rays
         let inv_pmmat = match pmmat.try_inverse() {
@@ -99,7 +101,13 @@ impl NaiveRaycaster {
                 let ray = Ray::from_pos(&x0, &x1);
 
                 for (object_id, object) in scene.objects.iter().enumerate() {
+                    let scene_volume = &self.scene_volumes[object_id];
                     let object_id = object_id as u32;
+
+                    stats.num_volume_tests += 1;
+                    if scene_volume.intersects_ray(&ray, Some(depth)).is_none() {
+                        continue;
+                    }
 
                     let mesh = &scene.meshes[object.mesh_index as usize];
                     let positions = &mesh.vertices;
@@ -136,21 +144,29 @@ impl NaiveRaycaster {
 }
 
 impl OcclusionTester for NaiveRaycaster {
-    type IndexedSceneType = Scene;
+    type IndexedSceneType = SceneWithVolumes;
 
     fn get_name() -> &'static str {
         "naive_raycaster_occ"
     }
 
-    fn new(stats: crate::StatsNode, scene: Scene, options: OccOptions) -> Result<Self> {
+    fn new(
+        stats: crate::StatsNode,
+        scene_with_volumes: SceneWithVolumes,
+        options: OccOptions,
+    ) -> Result<Self> {
         // compute the width == height which is the square root of the number of samples
         let s: usize = options.frame_size;
         let id_buffer = vec![None; s * s];
+
+        let scene = scene_with_volumes.scene;
+        let scene_volumes = scene_with_volumes.volumes;
 
         Ok(Self {
             stats,
             options,
             scene,
+            scene_volumes,
             id_buffer,
         })
     }
@@ -172,5 +188,65 @@ impl OcclusionTester for NaiveRaycaster {
         self.compute_visibility_internal(visibility);
 
         stats
+    }
+}
+
+/// An indexed and optimized scene data used for occlusion testing.
+#[derive(Serialize, Deserialize)]
+pub struct SceneWithVolumes {
+    scene: Scene,
+    volumes: Vec<AABB>,
+}
+
+impl IndexedScene for SceneWithVolumes {
+    fn from_read<R: std::io::Read>(reader: R) -> Result<Self> {
+        let result: Self = bincode::deserialize_from(reader)
+            .map_err(|e| crate::Error::DeserializationError(Box::new(e)))?;
+
+        Ok(result)
+    }
+
+    fn write<W: std::io::Write>(&self, writer: W) -> Result<()> {
+        bincode::serialize_into(writer, self)
+            .map_err(|e| crate::Error::SerializationError(Box::new(e)))
+    }
+
+    fn build_acceleration_structures(scene: Scene, progress: crate::ProgressCallback) -> Self {
+        let num_objects = scene.objects.len();
+
+        let mut last_update: i32 = -1i32;
+        let volumes: Vec<AABB> = scene
+            .objects
+            .iter()
+            .enumerate()
+            .map(|(i, object)| {
+                let mesh = &scene.meshes[object.mesh_index as usize];
+                let positions = &mesh.vertices;
+
+                // compute the progress
+                let p0 = (i * 100 / num_objects) as i32;
+                if p0 != last_update {
+                    last_update = p0;
+
+                    let p = i as f32 * 100f32 / num_objects as f32;
+
+                    progress(0, 1, p, "Computing bounding volumes...");
+                }
+
+                let aabb = AABB::from_iter(
+                    positions
+                        .iter()
+                        .map(|p| object.transform * Vec4::new(p[0], p[1], p[2], 1.0)),
+                );
+
+                trace!("AABB: {:?} for object ID={}", aabb, i);
+
+                aabb
+            })
+            .collect();
+
+        progress(0, 1, 100f32, "Computing bounding volumes...DONE");
+
+        SceneWithVolumes { scene, volumes }
     }
 }
