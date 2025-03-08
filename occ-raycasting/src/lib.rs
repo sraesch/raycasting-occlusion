@@ -5,6 +5,7 @@ mod math;
 pub mod rasterizer_culler;
 pub mod raycaster;
 mod scene;
+pub mod spatial;
 mod stats;
 mod utils;
 
