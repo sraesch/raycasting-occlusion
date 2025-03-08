@@ -2,9 +2,10 @@ use std::fmt;
 use std::fmt::Display;
 
 use nalgebra_glm as glm;
+use serde::{Deserialize, Serialize};
 
 /// An AABB bounding volume
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AABB {
     /// the corner with the lower coordinates
     pub min: glm::Vec3,
@@ -19,6 +20,21 @@ impl AABB {
         let max = glm::vec3(f32::MIN, f32::MIN, f32::MIN);
 
         AABB { min, max }
+    }
+
+    /// Creates a new bounding volume from the given iterator of vec3 positions.
+    ///
+    /// # Arguments
+    /// * `positions` - The iterator of vec3 positions to create the bounding volume from.
+    pub fn from_iter<I>(positions: I) -> Self
+    where
+        I: Iterator<Item = glm::Vec3>,
+    {
+        let mut result = AABB::new();
+
+        result.extend_iter(positions);
+
+        result
     }
 
     /// Creates a new cubic bounding volume with the specified center and size.
