@@ -163,7 +163,16 @@ fn main() {
     match run_program(options) {
         Ok(_) => {
             info!("Stat:");
-            info!("{}", format!("{}", *Stats::root().lock().unwrap()));
+
+            match Stats::root().to_string() {
+                Ok(stats) => {
+                    info!("{}", stats);
+                }
+                Err(err) => {
+                    error!("Failed to serialize stats: {:?}", err);
+                }
+            }
+
             info!("Program completed successfully");
         }
         Err(err) => {

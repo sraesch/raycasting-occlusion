@@ -121,6 +121,9 @@ impl TestExecutor {
         let mut visibility = Visibility::default();
         let mut test_stats: TestStats = Default::default();
         for (view_index, view) in self.config.views.iter().enumerate() {
+            let view_stats = s.get_child(&format!("view_{}", view_index));
+            let _t3 = view_stats.register_timing();
+
             info!(
                 "Render view {}/{}...",
                 view_index + 1,
@@ -130,12 +133,16 @@ impl TestExecutor {
             let view_matrix = view.view_matrix;
             let projection_matrix = view.projection_matrix;
 
-            test_stats += tester.compute_visibility(
+            let s = tester.compute_visibility(
                 &mut visibility,
                 frame.as_mut(),
                 view_matrix,
                 projection_matrix,
             );
+
+            s.add_to_stats(&view_stats);
+
+            test_stats += s;
 
             if let Some(frame) = frame.as_mut() {
                 let frame_path = setup_dir.join(format!("view_{}.ppm", view_index));
@@ -151,10 +158,13 @@ impl TestExecutor {
                     log::error!("Failed to save the frame: {:?}", err);
                 }
             }
-
-            // dump stats to the console
-            test_stats.dump_to_log();
         }
+
+        // dump stats to the console
+        test_stats.dump_to_log();
+
+        // add accumulated stats to the stats node
+        test_stats.add_to_stats(&s);
 
         Ok(())
     }

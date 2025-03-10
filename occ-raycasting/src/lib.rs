@@ -51,6 +51,15 @@ impl TestStats {
         log::info!("Num Triangles: {}", self.num_triangles);
         log::info!("Num Volume Tests: {}", self.num_volume_tests);
     }
+
+    /// Adds the stats to the given stats node.
+    ///
+    /// # Arguments
+    /// * `stats` - The stats node to add the stats to.
+    pub fn add_to_stats(&self, stats: &StatsNode) {
+        stats.add_value("Num Triangles", self.num_triangles as f64);
+        stats.add_value("Num Volume Tests", self.num_volume_tests as f64);
+    }
 }
 
 impl std::ops::Add<Self> for TestStats {
