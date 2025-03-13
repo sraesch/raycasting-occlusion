@@ -1,0 +1,13 @@
+[package]
+name = "rasterizer-viewer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+occ-raycasting = { path = "../occ-raycasting" }
+macroquad = "0.4"
+pretty_env_logger = "0.5"
+log = "0.4"
+anyhow = "1.0"
+nalgebra-glm = { version = "0.19", features = ["serde-serialize"] }
+clap = { version = "4.4", features = ["derive"] }
