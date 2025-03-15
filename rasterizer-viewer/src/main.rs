@@ -132,6 +132,23 @@ async fn main() {
     let palette = gen_random_colors(num_objects);
 
     loop {
+        // delegate the event handling to the camera
+        let mouse_pos = mouse_position();
+        let mouse_pos = (mouse_pos.0 as f64, mouse_pos.1 as f64);
+        camera.update_mouse_motion(mouse_pos.0, mouse_pos.1);
+
+        for btn in [MouseButton::Left, MouseButton::Right, MouseButton::Middle] {
+            if is_mouse_button_down(btn) {
+                camera.update_mouse_button(mouse_pos.0, mouse_pos.1, btn, true);
+            } else if is_mouse_button_released(btn) {
+                camera.update_mouse_button(mouse_pos.0, mouse_pos.1, btn, false);
+            }
+        }
+
+        // update the window size
+        let (w, h) = (screen_width() as u32, screen_height() as u32);
+        camera.update_window_size(w, h);
+
         clear_background(color::BLACK);
 
         rasterizer.clear();

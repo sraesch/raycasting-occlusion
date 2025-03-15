@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added test executor and dumping of test results.
 - Added github action to run tests on push and pull requests.
 - Added naive ray casting for occlusion culling.
+- Added viewer using rasterization to debug.
 
 ### Changed
 
