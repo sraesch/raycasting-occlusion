@@ -11,3 +11,5 @@ log = "0.4"
 anyhow = "1.0"
 nalgebra-glm = { version = "0.19", features = ["serde-serialize"] }
 clap = { version = "4.4", features = ["derive"] }
+rand = "0.9"
+rand_chacha = "0.9"

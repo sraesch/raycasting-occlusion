@@ -8,6 +8,7 @@
         "rasterizer",
         "rasterizes",
         "raycaster",
+        "Seedable",
         "serde",
         "thiserror"
     ]
