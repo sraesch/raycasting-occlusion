@@ -79,15 +79,13 @@ impl AABB {
     /// Computes and returns the bounding box center
     #[inline]
     pub fn get_center(&self) -> glm::Vec3 {
-        let center = (self.min + self.max) / 2.0;
-        center
+        (self.min + self.max) / 2.0
     }
 
     /// Computes and returns the bounding box size
     #[inline]
     pub fn get_size(&self) -> glm::Vec3 {
-        let size = self.max - self.min;
-        size
+        self.max - self.min
     }
 
     /// Returns a reference onto the minimum

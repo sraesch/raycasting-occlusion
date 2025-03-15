@@ -42,20 +42,19 @@ impl CameraData {
         // create rotation matrix
         let rot_mat = transpose(&self.cam_axis);
 
-        let tmat = translation(&(-cam_pos));
-        let res = mat3_to_mat4(&rot_mat) * tmat;
+        let t_mat = translation(&(-cam_pos));
 
-        res
+        mat3_to_mat4(&rot_mat) * t_mat
     }
 
     /// Returns the projection matrix for the camera
     pub fn get_projection_matrix(&self) -> Mat4 {
         let aspect = (self.window_size.0 as f32) / (self.window_size.1 as f32);
 
-        let mmat = self.get_model_matrix();
+        let m_mat = self.get_model_matrix();
 
         // transform the scene center
-        let z = -(mmat.row(2)
+        let z = -(m_mat.row(2)
             * Vec4::new(
                 self.scene_center[0],
                 self.scene_center[1],
@@ -70,20 +69,16 @@ impl CameraData {
         perspective(aspect, 1.0, near, far)
     }
 
-    /// Returns the combined matrix, i.e. the combination of the projection and model view matrix
-    pub fn get_combined_matrix(&self) -> Mat4 {
-        self.get_projection_matrix() * self.get_model_matrix()
-    }
-
     /// Returns the normal matrix
+    #[allow(dead_code)]
     pub fn get_normal_matrix(&self) -> Mat3 {
         let mat = mat4_to_mat3(&self.get_model_matrix());
 
         let d: f32 = determinant(&mat);
         if d.abs() <= 1e-9 {
-            return mat;
+            mat
         } else {
-            return transpose(&inverse(&mat));
+            transpose(&inverse(&mat))
         }
     }
 
@@ -126,8 +121,8 @@ impl CameraData {
         self.radius = radius;
     }
 
-    pub fn set_center(&mut self, center: &Vec3) {
-        self.center = center.clone();
+    pub fn set_center(&mut self, center: Vec3) {
+        self.center = center;
     }
 
     pub fn set_rotated_cam_axis(&mut self, axis: &Mat3, rot_mat: &Mat3) {

@@ -100,12 +100,9 @@ impl Frame {
             let mut max = 0f32;
 
             for (depth, id) in depths.iter().zip(ids.iter()) {
-                match id {
-                    Some(_) => {
-                        min = min.min(*depth);
-                        max = max.max(*depth);
-                    }
-                    None => {}
+                if id.is_some() {
+                    min = min.min(*depth);
+                    max = max.max(*depth);
                 }
             }
 

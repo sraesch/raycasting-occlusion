@@ -44,7 +44,7 @@ impl Camera {
             self.save_cursor[0] = x;
             self.save_cursor[1] = y;
 
-            self.saved_data = self.data.clone();
+            self.saved_data = self.data;
 
             match btn {
                 MouseButton::Right => self.mode = Mode::Zoom,
@@ -81,7 +81,7 @@ impl Camera {
         self.set_radius(box_size * 1.5);
 
         let camera_data = &mut self.data;
-        camera_data.set_center(&center);
+        camera_data.set_center(center);
 
         let scene_center = volume.get_center();
         let scene_radius = length(&volume.get_size()) / 2f32;
@@ -91,13 +91,11 @@ impl Camera {
     }
 
     fn modify(&mut self, new_x: f64, new_y: f64) {
-        let x_drift_func = || {
-            return ((new_x - self.save_cursor[0]) as f32) / (self.data.get_window_size().0 as f32);
-        };
+        let x_drift_func =
+            || ((new_x - self.save_cursor[0]) as f32) / (self.data.get_window_size().0 as f32);
 
-        let y_drift_func = || {
-            return ((new_y - self.save_cursor[1]) as f32) / (self.data.get_window_size().1 as f32);
-        };
+        let y_drift_func =
+            || ((new_y - self.save_cursor[1]) as f32) / (self.data.get_window_size().1 as f32);
 
         match self.mode {
             Mode::Zoom => {
@@ -118,7 +116,7 @@ impl Camera {
 
                 let new_center =
                     *self.saved_data.get_center() + x_axis * x_drift + y_axis * y_drift;
-                self.data.set_center(&new_center);
+                self.data.set_center(new_center);
             }
             Mode::Rotate => {
                 let x_drift = x_drift_func();

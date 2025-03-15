@@ -30,7 +30,7 @@ impl Plane {
     /// # Arguments
     /// * `eq` - The plane equation coefficients (a,b,c,d)
     pub fn from_equation_with_normalization(eq: &Vec4) -> Self {
-        let mut n = vec4_to_vec3(&eq);
+        let mut n = vec4_to_vec3(eq);
         let l = n.norm();
         assert!(l > 0f32, "Length of the normal part must be positive");
 
@@ -47,8 +47,8 @@ impl Plane {
     /// * `b0` - The first basis vector that spans the plane.
     /// * `b1` - The second basis vector that spans the plane.
     pub fn from_basis(pos: &Vec3, b0: &Vec3, b1: &Vec3) -> Self {
-        let n = b0.cross(&b1).normalize();
-        let d = -n.dot(&pos);
+        let n = b0.cross(b1).normalize();
+        let d = -n.dot(pos);
 
         Self { d, n }
     }
