@@ -2,11 +2,13 @@
     "editor.formatOnSave": true,
     "cSpell.words": [
         "chacha",
+        "macroquad",
         "nalgebra",
         "pmmat",
         "rasterizer",
         "rasterizes",
         "raycaster",
+        "Seedable",
         "serde",
         "thiserror"
     ]

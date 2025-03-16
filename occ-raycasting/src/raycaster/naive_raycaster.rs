@@ -1,11 +1,9 @@
-use bincode::de;
-use log::{error, trace};
-use nalgebra_glm::{vec3_to_vec4, vec4_to_vec3, Mat3x4, Mat4, Vec3, Vec4};
+use log::error;
+use nalgebra_glm::{vec4_to_vec3, Mat3x4, Mat4, Vec3, Vec4};
 
 use crate::{
-    math::{extract_camera_pos_from_view_matrix, mat3x4_to_mat4, triangle_ray, Ray},
+    math::{extract_camera_pos_from_view_matrix, triangle_ray, Ray},
     rasterizer_culler::Frame,
-    scene,
     utils::compute_visibility_from_id_buffer,
     OccOptions, OcclusionTester, Result, Scene, StatsNode, StatsNodeTrait, TestStats, Visibility,
 };
@@ -67,7 +65,7 @@ impl NaiveRaycaster {
         let mut stats = TestStats::default();
 
         // extract camera position
-        let x0 = extract_camera_pos_from_view_matrix(&view_matrix);
+        let x0 = extract_camera_pos_from_view_matrix(view_matrix);
 
         // compute matrix for defining the rays
         let inv_pmmat = match pmmat.try_inverse() {

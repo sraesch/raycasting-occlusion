@@ -70,12 +70,17 @@ pub struct RasterizerCuller {
 }
 
 impl RasterizerCuller {
+    /// Clears the rasterizer.
+    #[inline]
+    pub fn clear(&mut self) {
+        self.rasterizer.clear();
+    }
     /// Rasterizes the data and returns the stats about the rendering process.
     ///
     /// # Arguments
     /// * `view_matrix` - The view matrix of the camera.
     /// * `projection_matrix` - The projection matrix of the camera.
-    fn rasterize_data(
+    pub fn rasterize_data(
         &mut self,
         view_matrix: nalgebra_glm::Mat4,
         projection_matrix: nalgebra_glm::Mat4,
@@ -125,6 +130,11 @@ impl RasterizerCuller {
         }
 
         stats
+    }
+
+    /// Returns the rasterizer.
+    pub fn get_rasterizer(&self) -> &Rasterizer<u32> {
+        &self.rasterizer
     }
 
     /// Computes the visibility based on the rasterized ids in the framebuffer.

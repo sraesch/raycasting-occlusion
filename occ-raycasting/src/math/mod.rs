@@ -111,7 +111,7 @@ pub fn mat3x4_to_mat4(mat: &Mat3x4) -> Mat4 {
 /// # Arguments
 /// * `view_matrix` - The view matrix to extract the camera position from.
 pub fn extract_camera_pos_from_view_matrix(view_matrix: &Mat4) -> Vec3 {
-    let inv_view_matrix = inverse(&view_matrix);
+    let inv_view_matrix = inverse(view_matrix);
     let c3 = inv_view_matrix.column(3);
     Vec3::new(c3[0], c3[1], c3[2])
 }

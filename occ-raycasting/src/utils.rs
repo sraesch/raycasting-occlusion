@@ -13,13 +13,8 @@ pub fn compute_visibility_from_id_buffer(
 ) {
     // first create a histogram of the rendered ids
     let mut histogram = vec![0u32; num_objects];
-    for id in id_buffer.iter() {
-        match id {
-            Some(id) => {
-                histogram[*id as usize] += 1;
-            }
-            None => {}
-        }
+    for id in id_buffer.iter().flatten() {
+        histogram[*id as usize] += 1;
     }
 
     // make sure that the visibility has the correct size
