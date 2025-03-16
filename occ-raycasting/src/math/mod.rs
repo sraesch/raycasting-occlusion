@@ -2,11 +2,13 @@ mod aabb;
 mod intersection;
 mod plane;
 mod ray;
+mod triangle_plane;
 
 pub use aabb::*;
 pub use intersection::*;
 pub use plane::*;
 pub use ray::*;
+pub use triangle_plane::*;
 
 use nalgebra_glm::{inverse, vec4_to_vec3, Mat3x4, Mat4, Vec3, Vec4};
 
