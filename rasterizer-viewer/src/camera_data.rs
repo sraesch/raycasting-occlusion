@@ -47,10 +47,7 @@ impl CameraData {
         mat3_to_mat4(&rot_mat) * t_mat
     }
 
-    /// Returns the projection matrix for the camera
-    pub fn get_projection_matrix(&self) -> Mat4 {
-        let aspect = (self.window_size.0 as f32) / (self.window_size.1 as f32);
-
+    pub fn get_near_and_far(&self) -> (f32, f32) {
         let m_mat = self.get_model_matrix();
 
         // transform the scene center
@@ -65,6 +62,15 @@ impl CameraData {
         // determine far plane
         let far = z + self.scene_radius * 1.5;
         let near = (z - self.scene_radius).max(far * 1e-6f32);
+
+        (near, far)
+    }
+
+    /// Returns the projection matrix for the camera
+    pub fn get_projection_matrix(&self) -> Mat4 {
+        let aspect = (self.window_size.0 as f32) / (self.window_size.1 as f32);
+
+        let (near, far) = self.get_near_and_far();
 
         perspective(aspect, 1.0, near, far)
     }

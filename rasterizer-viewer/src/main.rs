@@ -151,8 +151,11 @@ async fn main() {
 
         clear_background(color::BLACK);
 
+        let (near, _) = camera.get_data().get_near_and_far();
+
         rasterizer.clear();
         rasterizer.rasterize_data(
+            near,
             camera.get_data().get_model_matrix(),
             camera.get_data().get_projection_matrix(),
         );

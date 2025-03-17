@@ -1,16 +1,18 @@
 mod frame;
 mod rasterizer;
 
+use arrayvec::ArrayVec;
 pub use frame::*;
 use log::trace;
-use nalgebra_glm::{transpose, Mat4};
+use nalgebra_glm::{transpose, Mat4, Vec3};
 use rasterizer::Rasterizer;
 
 use std::fmt::Debug;
 
 use crate::{
     math::{
-        mat3x4_to_mat4, project_pos, triangle_plane_intersection, Plane, TrianglePlaneIntersection,
+        mat3x4_to_mat4, project_pos, transform_vec3, triangle_plane_intersection, Plane,
+        TrianglePlaneIntersection,
     },
     utils::compute_visibility_from_id_buffer,
     OccOptions, OcclusionTester, Result, Scene, StatsNodeTrait, TestStats, Visibility,
@@ -80,10 +82,12 @@ impl RasterizerCuller {
     /// Rasterizes the data and returns the stats about the rendering process.
     ///
     /// # Arguments
+    /// * `near` - The near plane of the camera.
     /// * `view_matrix` - The view matrix of the camera.
     /// * `projection_matrix` - The projection matrix of the camera.
     pub fn rasterize_data(
         &mut self,
+        near: f32,
         view_matrix: nalgebra_glm::Mat4,
         projection_matrix: nalgebra_glm::Mat4,
     ) -> TestStats {
@@ -92,92 +96,102 @@ impl RasterizerCuller {
         let s = self.stats.get_child("rasterize");
         let _t = s.register_timing();
 
-        // combine the view and projection matrix
-        let combined = projection_matrix * view_matrix;
+        let near = -near;
 
         // iterate over all objects and rasterize them
         for (object_id, object) in self.scene.objects.iter().enumerate() {
             let object_id = object_id as u32;
             trace!("Rasterize object: {}", object_id);
 
-            let transform = combined * mat3x4_to_mat4(&object.transform);
-            let near_plane = Self::extract_near_plane(&combined);
+            let model_view = view_matrix * mat3x4_to_mat4(&object.transform);
 
             let mesh = &self.scene.meshes[object.mesh_index as usize];
             let positions = &mesh.vertices;
 
             for t in mesh.indices.iter() {
-                let p = [
-                    &positions[t[0] as usize],
-                    &positions[t[1] as usize],
-                    &positions[t[2] as usize],
-                ];
+                let p: ArrayVec<Vec3, 3> = ArrayVec::from_iter(
+                    (0..3).map(|i| transform_vec3(&model_view, &positions[t[i] as usize])),
+                );
 
-                match triangle_plane_intersection(&near_plane, p) {
-                    TrianglePlaneIntersection::Front => {
-                        stats.num_triangles += 1;
-                        let v0 = project_pos(
-                            frame_size,
-                            frame_size,
-                            &transform,
-                            &positions[t[0] as usize],
-                        );
-                        let v1 = project_pos(
-                            frame_size,
-                            frame_size,
-                            &transform,
-                            &positions[t[1] as usize],
-                        );
-                        let v2 = project_pos(
-                            frame_size,
-                            frame_size,
-                            &transform,
-                            &positions[t[2] as usize],
-                        );
+                let z = [p[0].z, p[1].z, p[2].z];
+                let max_z = z.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+                // println!("max z: {:?}", max_z);
 
-                        self.rasterizer.rasterize(object_id, &v0, &v1, &v2);
-                    }
-                    TrianglePlaneIntersection::Behind => {
-                        trace!("Triangle is behind the near plane");
-                    }
-                    TrianglePlaneIntersection::Intersecting((n, p)) => {
-                        trace!("Triangle is intersecting the near plane");
-                        stats.num_triangles += 1;
-                        let v0 = project_pos(frame_size, frame_size, &transform, &p[0]);
-                        let v1 = project_pos(frame_size, frame_size, &transform, &p[1]);
-                        let v2 = project_pos(frame_size, frame_size, &transform, &p[2]);
-
-                        self.rasterizer.rasterize(object_id, &v0, &v1, &v2);
-
-                        if n == 4 {
-                            stats.num_triangles += 1;
-                            let v3 = project_pos(frame_size, frame_size, &transform, &p[3]);
-                            self.rasterizer.rasterize(object_id, &v0, &v2, &v3);
-                        }
-                    }
+                if max_z >= near {
+                    continue;
                 }
 
-                // let v0 = project_pos(
-                //     frame_size,
-                //     frame_size,
-                //     &transform,
-                //     &positions[t[0] as usize],
-                // );
-                // let v1 = project_pos(
-                //     frame_size,
-                //     frame_size,
-                //     &transform,
-                //     &positions[t[1] as usize],
-                // );
-                // let v2 = project_pos(
-                //     frame_size,
-                //     frame_size,
-                //     &transform,
-                //     &positions[t[2] as usize],
-                // );
+                let v: ArrayVec<Vec3, 3> = ArrayVec::from_iter(
+                    (0..3).map(|i| project_pos(frame_size, frame_size, &projection_matrix, &p[i])),
+                );
 
-                // self.rasterizer.rasterize(object_id, &v0, &v1, &v2);
+                self.rasterizer.rasterize(object_id, &v);
+
+                // match triangle_plane_intersection(&near_plane, p) {
+                //     TrianglePlaneIntersection::Front => {
+                //         stats.num_triangles += 1;
+                //         let v0 = project_pos(
+                //             frame_size,
+                //             frame_size,
+                //             &transform,
+                //             &positions[t[0] as usize],
+                //         );
+                //         let v1 = project_pos(
+                //             frame_size,
+                //             frame_size,
+                //             &transform,
+                //             &positions[t[1] as usize],
+                //         );
+                //         let v2 = project_pos(
+                //             frame_size,
+                //             frame_size,
+                //             &transform,
+                //             &positions[t[2] as usize],
+                //         );
+
+                //         self.rasterizer.rasterize(object_id, &v0, &v1, &v2);
+                //     }
+                //     TrianglePlaneIntersection::Behind => {
+                //         trace!("Triangle is behind the near plane");
+                //     }
+                //     TrianglePlaneIntersection::Intersecting((n, p)) => {
+                //         trace!("Triangle is intersecting the near plane");
+                //         stats.num_triangles += 1;
+                //         let v0 = project_pos(frame_size, frame_size, &transform, &p[0]);
+                //         let v1 = project_pos(frame_size, frame_size, &transform, &p[1]);
+                //         let v2 = project_pos(frame_size, frame_size, &transform, &p[2]);
+
+                //         self.rasterizer.rasterize(object_id, &v0, &v1, &v2);
+
+                //         if n == 4 {
+                //             stats.num_triangles += 1;
+                //             let v3 = project_pos(frame_size, frame_size, &transform, &p[3]);
+                //             self.rasterizer.rasterize(object_id, &v0, &v2, &v3);
+                //         }
+                //     }
             }
+
+            // let v0 = project_pos(
+            //     frame_size,
+            //     frame_size,
+            //     &transform,
+            //     &positions[t[0] as usize],
+            // );
+            // let v1 = project_pos(
+            //     frame_size,
+            //     frame_size,
+            //     &transform,
+            //     &positions[t[1] as usize],
+            // );
+            // let v2 = project_pos(
+            //     frame_size,
+            //     frame_size,
+            //     &transform,
+            //     &positions[t[2] as usize],
+            // );
+
+            // self.rasterizer.rasterize(object_id, &v0, &v1, &v2);
+            // }
         }
 
         stats
@@ -237,7 +251,10 @@ impl OcclusionTester for RasterizerCuller {
         projection_matrix: Mat4,
     ) -> TestStats {
         self.rasterizer.clear();
-        let stats = self.rasterize_data(view_matrix, projection_matrix);
+
+        let near = projection_matrix[14] / (projection_matrix[10] - 1.0);
+
+        let stats = self.rasterize_data(near, view_matrix, projection_matrix);
 
         if let Some(frame) = frame {
             *frame = self.rasterizer.get_frame();

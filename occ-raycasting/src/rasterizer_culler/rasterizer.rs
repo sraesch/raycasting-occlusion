@@ -69,32 +69,30 @@ impl<D: DepthBufferPrecisionType> Rasterizer<D> {
     ///
     /// # Arguments
     /// * `id` - The object id to which the triangle belongs to.
-    /// * `p0` - The first vertex of the triangle in window coordinates.
-    /// * `p1` - The second vertex of the triangle in window coordinates.
-    /// * `p2` - The third vertex of the triangle in window coordinates.
-    pub fn rasterize(&mut self, id: u32, p0: &Vec3, p1: &Vec3, p2: &Vec3) {
+    /// * `p` - The points of the triangle in window coordinates.`
+    pub fn rasterize(&mut self, id: u32, p: &[Vec3]) {
         // sort the vertices in ascending order with respect to their y coordinate
 
-        if p0.y <= p1.y && p0.y <= p2.y {
-            // case 1: p0 has smallest y-coordinate
-            if p1.y <= p2.y {
-                self.fill_triangle(id, p0, p1, p2);
+        if p[0].y <= p[1].y && p[0].y <= p[2].y {
+            // case 1: p[0] has smallest y-coordinate
+            if p[1].y <= p[2].y {
+                self.fill_triangle(id, &p[0], &p[1], &p[2]);
             } else {
-                self.fill_triangle(id, p0, p2, p1);
+                self.fill_triangle(id, &p[0], &p[2], &p[1]);
             }
-        } else if p1.y <= p0.y && p1.y <= p2.y {
-            // case 2: p1 has smallest y-coordinate
-            if p0.y <= p2.y {
-                self.fill_triangle(id, p1, p0, p2);
+        } else if p[1].y <= p[0].y && p[1].y <= p[2].y {
+            // case 2: p[1] has smallest y-coordinate
+            if p[0].y <= p[2].y {
+                self.fill_triangle(id, &p[1], &p[0], &p[2]);
             } else {
-                self.fill_triangle(id, p1, p2, p0);
+                self.fill_triangle(id, &p[1], &p[2], &p[0]);
             }
         } else {
-            // case 3: p2 has smallest y-coordinate
-            if p0.y <= p1.y {
-                self.fill_triangle(id, p2, p0, p1);
+            // case 3: p[2] has smallest y-coordinate
+            if p[0].y <= p[1].y {
+                self.fill_triangle(id, &p[2], &p[0], &p[1]);
             } else {
-                self.fill_triangle(id, p2, p1, p0);
+                self.fill_triangle(id, &p[2], &p[1], &p[0]);
             }
         }
     }
